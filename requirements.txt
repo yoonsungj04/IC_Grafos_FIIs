@@ -1,0 +1,29 @@
+# IC — GPMF para FIIs — pinned dependencies
+# Target interpreter: Python 3.12 (Homebrew). Pins chosen for reproducibility.
+# Only yfinance needs internet; everything downstream runs offline on cached data.
+
+# --- core numerics ---
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.13.1
+
+# --- data download (the ONLY networked dependency) ---
+yfinance==0.2.51
+# Yahoo blocks plain requests by TLS fingerprint; curl_cffi impersonates a
+# real browser handshake so yfinance gets through (HTTP 200 instead of 429).
+curl_cffi==0.15.0
+
+# --- graph: GPMF/PMFG construction + planarity (Boyer-Myrvold via check_planarity) ---
+networkx==3.3
+
+# --- statistics: Jobson-Korkie / bootstrap significance tests (Phase C) ---
+statsmodels==0.14.4
+
+# --- plotting / tables ---
+matplotlib==3.9.2
+
+# --- utilities ---
+tqdm==4.66.5
+
+# --- geração do relatório final em .docx ---
+python-docx==1.2.0

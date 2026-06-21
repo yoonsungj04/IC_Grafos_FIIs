@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Estado local do editor
+.claude/
+.vscode/
+
+# Node (artefatos de ferramentas auxiliares)
+node_modules/
+
+# Data: keep frozen raw cache tracked, ignore large/processed intermediates.
+# (raw is small parquet/csv; flip this if it grows too large for git)
+data/processed/*
+!data/processed/.gitkeep
+
+# Results are regenerated; keep folders, ignore heavy artifacts if needed
+results/figures/*.png
+results/figures/*.pdf
+
+# Arquivos temporários do Office
+~$*
