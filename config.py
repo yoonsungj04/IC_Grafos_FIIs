@@ -126,7 +126,16 @@ DIVIDENDS_TAX = 0.0                # FIIs: dividendos isentos para PF
 
 # --------------------------------------------------------------------------- #
 # Avaliação
+#   A taxa livre de risco é o CDI diário (BCB/SGS série 12), e não zero: para
+#   ativo brasileiro com SELIC de dois dígitos, usar rf=0 infla artificialmente
+#   todos os Sharpe. O Sharpe é calculado sobre o retorno EXCEDENTE (Rt - CDIt).
+#     RISK_FREE_SOURCE = "cdi"      -> excesso sobre o CDI diário em cache
+#                        "constant" -> excesso sobre RISK_FREE_ANNUAL fixo
+#                        "zero"     -> sem excesso (comportamento antigo)
 # --------------------------------------------------------------------------- #
-RISK_FREE_ANNUAL = 0.0             # ajustar para proxy do CDI/SELIC se necessário
+RISK_FREE_SOURCE = "cdi"
+RISK_FREE_ANNUAL = 0.0             # usado apenas quando RISK_FREE_SOURCE != "cdi"
+BCB_CDI_SERIES = 12               # série diária do CDI (% a.d.) no SGS do BCB
 TRADING_DAYS_PER_YEAR = 252
 RANDOM_SEED = 42                   # bootstrap e qualquer etapa estocástica
+N_BOOTSTRAP = 5000                # reamostragens para o IC da diferença de Sharpe

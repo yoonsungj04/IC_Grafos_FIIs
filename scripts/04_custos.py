@@ -14,7 +14,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import config
-from src import costs, metrics
+from src import costs, metrics, riskfree
 
 
 def main() -> None:
@@ -24,14 +24,17 @@ def main() -> None:
     bench = (pd.read_csv(bench_path, index_col=0, parse_dates=True).iloc[:, 0]
              if bench_path.exists() else None)
 
+    rf = riskfree.serie_rf_diaria(oos.index)
+    print(f"rf: {config.RISK_FREE_SOURCE} (média {rf.mean()*config.TRADING_DAYS_PER_YEAR*100:.1f}% a.a.)\n")
+
     # --- bruto vs líquido ---
     linhas = []
     liquidos = {}
     for lbl in oos.columns:
         liq = costs.aplicar_custos_serie(oos[lbl], giros[lbl])
         liquidos[lbl] = liq
-        eb = metrics.estatisticas(oos[lbl])
-        el = metrics.estatisticas(liq)
+        eb = metrics.estatisticas(oos[lbl], rf_diaria=rf)
+        el = metrics.estatisticas(liq, rf_diaria=rf)
         linhas.append({
             "carteira": lbl,
             "giro_medio": float(giros[lbl].mean()),
@@ -44,8 +47,10 @@ def main() -> None:
     tabela.to_csv(config.TABLES_DIR / "tabela_custos.csv")
     pd.DataFrame(liquidos).to_csv(config.PROCESSED_DIR / "retornos_oos_liquidos.csv")
 
-    # --- testes de significância (Jobson-Korkie) sobre o líquido ---
-    print("\n--- testes de Jobson-Korkie (diferença de Sharpe, líquido) ---")
+    _decompor_custos(oos, giros, rf)
+
+    # --- testes de significância sobre o líquido: Jobson-Korkie + bootstrap ---
+    print("\n--- diferença de Sharpe líquido (Jobson-Korkie + IC bootstrap 95%) ---")
     pares = [("peripheral_10", "central_10"), ("hybrid_10", "central_10")]
     if bench is not None:
         bench_liq = bench.reindex(oos.index).dropna()
@@ -55,14 +60,50 @@ def main() -> None:
 
     res_testes = []
     for a, b in pares:
-        jk = metrics.jobson_korkie(liquidos[a], liquidos[b])
-        sig = "sim" if (jk["p_valor"] is not None and jk["p_valor"] < 0.05) else "não"
-        print(f"{a:>14} vs {b:<12}: ΔSharpe={jk['diff_sharpe']:+.3f}  "
-              f"z={jk['z']:+.2f}  p={jk['p_valor']:.3f}  signif.(5%)={sig}")
-        res_testes.append({"a": a, "b": b, **jk})
-    pd.DataFrame(res_testes).to_csv(config.TABLES_DIR / "testes_significancia.csv", index=False)
+        jk = metrics.jobson_korkie(liquidos[a], liquidos[b], rf_diaria=rf)
+        bs = metrics.bootstrap_diff_sharpe(liquidos[a], liquidos[b], rf_diaria=rf)
+        cruza_zero = bs["ic_baixo"] <= 0 <= bs["ic_alto"]
+        sig = "não" if cruza_zero else "sim"
+        print(f"{a:>14} vs {b:<12}: ΔSharpe(aa)={bs['diff']:+.2f}  "
+              f"IC95=[{bs['ic_baixo']:+.2f}, {bs['ic_alto']:+.2f}]  "
+              f"p_boot={bs['p_boot']:.3f}  p_JK={jk['p_valor']:.3f}  signif.={sig}")
+        res_testes.append({"a": a, "b": b, "diff_sharpe": jk["diff_sharpe"],
+                           "z": jk["z"], "p_valor": jk["p_valor"],
+                           "diff_sharpe_aa": bs["diff"], "ic95_baixo": bs["ic_baixo"],
+                           "ic95_alto": bs["ic_alto"], "p_boot": bs["p_boot"], "n": jk["n"]})
+    pd.DataFrame(res_testes).round(4).to_csv(
+        config.TABLES_DIR / "testes_significancia.csv", index=False)
 
     _figura_liquido(oos, liquidos, bench)
+
+
+def _decompor_custos(oos, giros, rf) -> None:
+    """
+    Decompõe o arrasto de desempenho em custo de transação e imposto, isolando
+    cada parcela. Reporta giro e custo médios por rebalanceamento (~mensal),
+    como na versão Colab, e o arrasto anualizado de cada componente.
+    """
+    print("\n--- decomposição de custos (bruto -> custo -> imposto) ---")
+    linhas = []
+    for lbl in oos.columns:
+        so_custo = costs.aplicar_custos_serie(oos[lbl], giros[lbl], imposto=0.0)
+        liq = costs.aplicar_custos_serie(oos[lbl], giros[lbl])
+        rb = metrics.estatisticas(oos[lbl], rf_diaria=rf)["retorno_anual"]
+        rc = metrics.estatisticas(so_custo, rf_diaria=rf)["retorno_anual"]
+        rl = metrics.estatisticas(liq, rf_diaria=rf)["retorno_anual"]
+        g = giros[lbl]
+        linhas.append({
+            "carteira": lbl,
+            "giro_medio_am": float(g.mean()),
+            "custo_medio_am": float((config.TRANSACTION_COST * g).mean()),
+            "ret_bruto_aa": rb,
+            "arrasto_custo_aa": rb - rc,
+            "arrasto_imposto_aa": rc - rl,
+            "ret_liq_aa": rl,
+        })
+    tab = pd.DataFrame(linhas).set_index("carteira").round(4)
+    print(tab.to_string())
+    tab.to_csv(config.TABLES_DIR / "tabela_custos_decomposta.csv")
 
 
 def _figura_liquido(oos, liquidos, bench) -> None:

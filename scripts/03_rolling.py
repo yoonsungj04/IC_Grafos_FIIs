@@ -15,7 +15,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import config
-from src import metrics, pipeline, rolling
+from src import metrics, pipeline, riskfree, rolling
 
 
 def main() -> None:
@@ -38,11 +38,15 @@ def main() -> None:
     # benchmark alinhado ao período fora da amostra
     bench = dados["benchmark"].reindex(oos.index).dropna() if dados["benchmark"] is not None else None
 
+    # taxa livre de risco (CDI diário) para o Sharpe sobre o excesso
+    rf = riskfree.serie_rf_diaria(oos.index)
+    print(f"rf: {config.RISK_FREE_SOURCE} (média {rf.mean()*config.TRADING_DAYS_PER_YEAR*100:.1f}% a.a.)\n")
+
     linhas = []
     for lbl in oos.columns:
-        linhas.append({"carteira": lbl, **metrics.estatisticas(oos[lbl])})
+        linhas.append({"carteira": lbl, **metrics.estatisticas(oos[lbl], rf_diaria=rf)})
     if bench is not None:
-        linhas.append({"carteira": "benchmark", **metrics.estatisticas(bench)})
+        linhas.append({"carteira": "benchmark", **metrics.estatisticas(bench, rf_diaria=rf)})
     tabela = pd.DataFrame(linhas).set_index("carteira").round(4)
     print(tabela.to_string())
     tabela.to_csv(config.TABLES_DIR / "tabela_rolling_bruta.csv")
@@ -54,16 +58,16 @@ def main() -> None:
     if bench is not None:
         bench.rename("benchmark").to_csv(config.PROCESSED_DIR / "benchmark_oos.csv")
 
-    _teste_pozzi(oos)
+    _teste_pozzi(oos, rf)
     _figura_curvas(oos, bench)
 
 
-def _teste_pozzi(oos: pd.DataFrame) -> None:
+def _teste_pozzi(oos: pd.DataFrame, rf) -> None:
     """Compara centro vs periferia para o tamanho de referência (10)."""
     print("\n--- hipótese de Pozzi (periferia vence?) fora da amostra ---")
     for tam in config.PORTFOLIO_SIZES:
-        c = metrics.estatisticas(oos[f"central_{tam}"])["sharpe"]
-        p = metrics.estatisticas(oos[f"peripheral_{tam}"])["sharpe"]
+        c = metrics.estatisticas(oos[f"central_{tam}"], rf_diaria=rf)["sharpe"]
+        p = metrics.estatisticas(oos[f"peripheral_{tam}"], rf_diaria=rf)["sharpe"]
         venc = "PERIFERIA" if p > c else "CENTRO"
         print(f"tam {tam:>2}: Sharpe centro={c:.3f}  periferia={p:.3f}  -> vence {venc}")
 

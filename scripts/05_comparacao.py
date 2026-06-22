@@ -15,7 +15,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import config
-from src import costs, gpmf, metrics, pipeline, rolling
+from src import costs, gpmf, metrics, pipeline, riskfree, rolling
 
 
 def _backtest_liquido(ret_log, construtor):
@@ -29,6 +29,7 @@ def main() -> None:
     dados = pipeline.preparar_dados()
     ret_log = dados["retornos_log"]
 
+    rf = riskfree.serie_rf_diaria(ret_log.index)
     filtros = {"GPMF": gpmf.construir_gpmf, "MST": gpmf.construir_mst}
     linhas = []
     curvas = {}
@@ -38,7 +39,7 @@ def main() -> None:
               f"(limite/N: {grafos['limite_3n_6'].iloc[0]})")
         for tipo in config.PORTFOLIO_TYPES:
             lbl = f"{tipo}_10"
-            est = metrics.estatisticas(liq[lbl])
+            est = metrics.estatisticas(liq[lbl], rf_diaria=rf)
             linhas.append({"filtro": nome, "carteira": tipo,
                            "sharpe_liq": round(est["sharpe"], 4),
                            "ret_liq": round(est["retorno_acumulado"], 4),
@@ -47,7 +48,8 @@ def main() -> None:
 
     bench = pd.read_csv(config.PROCESSED_DIR / "benchmark_oos.csv",
                         index_col=0, parse_dates=True).iloc[:, 0]
-    est_b = metrics.estatisticas(bench.reindex(list(curvas.values())[0].index).dropna())
+    est_b = metrics.estatisticas(bench.reindex(list(curvas.values())[0].index).dropna(),
+                                 rf_diaria=rf)
     linhas.append({"filtro": "benchmark", "carteira": "-",
                    "sharpe_liq": round(est_b["sharpe"], 4),
                    "ret_liq": round(est_b["retorno_acumulado"], 4),

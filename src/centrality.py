@@ -34,4 +34,13 @@ def calcular_centralidades(G: nx.Graph,
             colunas["eigenvector"] = nx.eigenvector_centrality_numpy(G)
 
     df = pd.DataFrame(colunas)
+
+    # Score composto (média das medidas normalizadas, exceto autovetor) — é o
+    # ranking usado pelo braço AGM; incluído aqui para comparar os dois métodos
+    # sob exatamente a mesma regra de seleção.
+    base = [m for m in ("degree", "betweenness", "closeness") if m in df.columns]
+    if base:
+        norm = (df[base] - df[base].min()) / (df[base].max() - df[base].min() + 1e-9)
+        df["composite"] = norm.mean(axis=1)
+
     return df.reindex(sorted(df.index))

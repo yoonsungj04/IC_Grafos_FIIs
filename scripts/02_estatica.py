@@ -14,7 +14,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import config
-from src import centrality, gpmf, metrics, pipeline, portfolio
+from src import centrality, gpmf, metrics, pipeline, portfolio, riskfree
 
 
 def main() -> None:
@@ -32,17 +32,19 @@ def main() -> None:
     cent = centrality.calcular_centralidades(G)
     cent.to_csv(config.TABLES_DIR / "centralidade_estatica.csv")
 
-    # carteiras + benchmark
+    # carteiras + benchmark (Sharpe sobre o excesso ao CDI diário)
+    rf = riskfree.serie_rf_diaria(ret_log.index)
     linhas = []
     for tipo in config.PORTFOLIO_TYPES:
         for tam in config.PORTFOLIO_SIZES:
             pesos = portfolio.selecionar_carteira(cent, tipo, tam)
             ret = portfolio.retorno_carteira(ret_log, pesos)
-            est = metrics.estatisticas(ret)
+            est = metrics.estatisticas(ret, rf_diaria=rf)
             linhas.append({"carteira": f"{tipo}_{tam}", **est})
 
     if dados["benchmark"] is not None:
-        linhas.append({"carteira": "benchmark", **metrics.estatisticas(dados["benchmark"])})
+        linhas.append({"carteira": "benchmark",
+                       **metrics.estatisticas(dados["benchmark"], rf_diaria=rf)})
 
     tabela = pd.DataFrame(linhas).set_index("carteira").round(4)
     print("\n" + tabela.to_string())

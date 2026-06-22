@@ -31,6 +31,13 @@ def main() -> None:
         except Exception as e:
             print(f"benchmark {bench} falhou ({e})")
 
+    # CDI diário (BCB/SGS) — taxa livre de risco para o Sharpe
+    print("\nbaixando CDI (BCB/SGS)...")
+    try:
+        data_load.baixar_cdi()
+    except Exception as e:
+        print(f"CDI falhou ({e})")
+
 
 if __name__ == "__main__":
     main()

@@ -116,6 +116,12 @@ def main():
     bench_sh = roll.loc["benchmark", "sharpe"]
     melhor_ativa_liq = cus["sharpe_liq"].idxmax()
 
+    # taxa livre de risco média (CDI) e tabelas de robustez/decomposição
+    from src import data_load
+    rf_aa = float(data_load.carregar_cdi().mean() * config.TRADING_DAYS_PER_YEAR * 100)
+    subper = pd.read_csv(TAB / "tabela_subperiodos.csv", index_col=0)
+    decomp = pd.read_csv(TAB / "tabela_custos_decomposta.csv", index_col=0)
+
     doc = Document()
     estilo = doc.styles["Normal"]
     estilo.font.name = "Calibri"
@@ -168,14 +174,17 @@ def main():
         "total, evitando dupla contagem de dividendos; (ii) tornou a seleção do "
         "universo determinística e reprodutível; e (iii) implementou a validação por "
         "janela deslizante (out-of-sample), núcleo científico do trabalho. Com a "
-        "metodologia corrigida, as carteiras periféricas apresentam melhor relação "
-        "risco-retorno tanto dentro quanto, sobretudo, fora da amostra — onde superam "
-        "as centrais em todos os tamanhos testados, em linha com a hipótese de Pozzi et "
-        "al. (2013). Esse resultado revisa a conclusão do relatório parcial, cuja "
-        "vantagem das carteiras centrais era afetada pela dupla contagem de dividendos. "
-        "Líquido de custos e tributos, porém, o benchmark passivo (IFIX) mostra-se "
-        "difícil de superar e as diferenças não atingem significância estatística na "
-        "janela analisada.")
+        "metodologia corrigida — e medindo o Índice de Sharpe sobre o excesso ao CDI —, "
+        "as carteiras periféricas apresentam melhor relação risco-retorno na janela "
+        "completa fora da amostra, superando as centrais em todos os tamanhos testados, "
+        "em linha com a hipótese de Pozzi et al. (2013). Esse resultado revisa a "
+        "conclusão do relatório parcial, cuja vantagem das carteiras centrais era afetada "
+        "pela dupla contagem de dividendos. A vantagem da periferia é, porém, qualificada "
+        "por três limites: líquido de custos e tributos nenhuma carteira ativa supera o "
+        "benchmark passivo (IFIX); a diferença periferia−centro não atinge significância "
+        "estatística (intervalo de confiança por bootstrap cruza zero); e ela não é "
+        "estável no tempo, concentrando-se no sub-período de mercado fraco e invertendo-se "
+        "na recuperação — sugerindo um caráter defensivo, dependente de regime.")
 
     # ---------------- Introdução ----------------
     h1(doc, "Introdução")
@@ -250,9 +259,16 @@ def main():
         f"Aplica-se custo de transação de {custo_pct}% sobre o "
         f"giro a cada rebalanceamento e imposto de {int(config.CAPITAL_GAINS_TAX*100)}% "
         f"sobre o ganho de capital realizado em cada janela; os dividendos de FII são "
-        f"isentos para pessoa física. A significância das diferenças de Índice de "
-        f"Sharpe é avaliada pelo teste de Jobson-Korkie com correção de Memmel (2003). "
-        f"O mesmo arcabouço é aplicado à AGM para a comparação direta GPMF × AGM.")
+        f"isentos para pessoa física. O Índice de Sharpe é calculado sobre o retorno "
+        f"EXCEDENTE em relação ao CDI diário (série 12 do SGS/BCB; média de "
+        f"{rf_aa:.1f}% a.a. no período) — e não sobre retorno bruto: para ativo "
+        f"brasileiro com a Selic em dois dígitos, adotar taxa livre de risco nula "
+        f"infla artificialmente o Sharpe e é a correção que mais altera os números "
+        f"em relação a versões anteriores. A significância das diferenças de Índice de "
+        f"Sharpe é avaliada de duas formas complementares: o teste assintótico de "
+        f"Jobson-Korkie com correção de Memmel (2003) e um intervalo de confiança de "
+        f"95% por bootstrap de blocos circulares (que respeita a autocorrelação "
+        f"diária). O mesmo arcabouço é aplicado à AGM para a comparação GPMF × AGM.")
 
     # ---------------- Resultados ----------------
     h1(doc, "Resultados")
@@ -279,11 +295,13 @@ def main():
 
     h2(doc, "Validação fora da amostra (resultado principal)")
     par(doc,
-        f"A Tabela 2 traz o desempenho bruto (sem custos) fora da amostra. As carteiras "
-        f"periféricas superam as centrais em todos os tamanhos testados (10, 15 e 20), "
-        f"sustentando de forma consistente a hipótese de Pozzi sem o viés de "
-        f"antecipação. O GPMF manteve-se planar e conexo, com {arestas} arestas, em "
-        f"todos os {n_rebal} rebalanceamentos.")
+        f"A Tabela 2 traz o desempenho bruto (sem custos) fora da amostra. Na janela "
+        f"completa as carteiras periféricas superam as centrais em todos os tamanhos "
+        f"testados (10, 15 e 20), favorecendo a hipótese de Pozzi sem o viés de "
+        f"antecipação — ressalvando-se que essa vantagem não é estatisticamente "
+        f"significativa nem estável ao longo do ciclo, como mostram as seções de "
+        f"significância e de robustez por sub-período. O GPMF manteve-se planar e "
+        f"conexo, com {arestas} arestas, em todos os {n_rebal} rebalanceamentos.")
     tabela(doc, roll.round(4),
            "Tabela 2 — Desempenho fora da amostra (bruto, sem custos)",
            fmt=lambda c, v: (f"{v*100:.2f}%" if c in ("retorno_anual", "vol_anual",
@@ -306,30 +324,78 @@ def main():
     fig(doc, "curvas_oos_liquido.png",
         "Figura 4 — Retorno acumulado fora da amostra, líquido de custos e IR.")
 
+    par(doc,
+        "A Tabela 4 isola as duas parcelas do arrasto entre bruto e líquido. O custo de "
+        "transação acompanha o giro — as carteiras periféricas e híbridas, de maior "
+        "rotatividade, pagam mais —, mas é o imposto sobre o ganho de capital o "
+        "componente dominante. Em conjunto, custo e imposto consomem todo o prêmio bruto "
+        "das carteiras de centro e híbridas, que terminam com retorno líquido negativo; "
+        "apenas as periféricas maiores (15 e 20) preservam retorno líquido positivo.")
+    decomp_show = decomp.copy()
+    decomp_show.index.name = "carteira"
+    tabela(doc, decomp_show,
+           "Tabela 4 — Decomposição do arrasto: custo de transação × imposto",
+           fmt=lambda c, v: (f"{v*100:.2f}%" if c.startswith("ret") or
+                             c.startswith("arrasto") or c.startswith("custo") or
+                             c.startswith("giro") else f"{v:.3f}"))
+
     h2(doc, "Significância estatística")
     par(doc,
-        "A Tabela 4 traz o teste de Jobson-Korkie sobre as séries líquidas. As "
-        "diferenças de Sharpe observadas não atingem significância a 5% na janela "
-        "disponível — resultado coerente com o poder estatístico limitado de uma série "
-        "fora da amostra ainda relativamente curta.")
+        "A Tabela 5 resume, para cada par de séries líquidas, a diferença de Índice de "
+        "Sharpe anualizado, o intervalo de confiança de 95% por bootstrap de blocos e o "
+        "p-valor do teste de Jobson-Korkie. Entre as próprias carteiras GPMF, a "
+        "diferença periferia−centro é positiva mas o intervalo de confiança cruza zero: "
+        "a vantagem da periferia não atinge significância estatística na janela "
+        "disponível por nenhum dos dois critérios. Frente ao benchmark surge uma "
+        "distinção sugestiva, porém dependente do método: pelo bootstrap, a Central-10 e "
+        "a Híbrida-10 ficam abaixo do IFIX com intervalo inteiramente negativo "
+        "(p_boot ≈ 0,01), enquanto a Periférica-10 inclui zero — mas o teste assintótico "
+        "de Jobson-Korkie, mais conservador, NÃO rejeita a igualdade em nenhum dos casos "
+        "(p_JK ≈ 0,11–0,17). A leitura prudente é que a periferia, no máximo, empata com "
+        "o índice passivo, e há indício (não conclusivo) de que o centro fique atrás "
+        "dele; confirmar isso exige uma janela fora da amostra mais longa.")
     test_show = test.copy()
-    test_show = test_show.rename(columns={"a": "carteira A", "b": "carteira B",
-                                          "diff_sharpe": "ΔSharpe", "p_valor": "p"})
-    test_show = test_show[["carteira A", "carteira B", "ΔSharpe", "z", "p", "n"]].set_index("carteira A")
-    tabela(doc, test_show.round(4),
-           "Tabela 4 — Teste de Jobson-Korkie (diferença de Índice de Sharpe, líquido)",
-           fmt=lambda c, v: f"{int(v)}" if c == "n" else f"{v:.3f}")
+    test_show["IC95 (aa)"] = test_show.apply(
+        lambda r: f"[{r['ic95_baixo']:+.2f}; {r['ic95_alto']:+.2f}]", axis=1)
+    test_show["par"] = test_show["a"] + " vs " + test_show["b"]
+    test_show = test_show.rename(columns={"diff_sharpe_aa": "ΔSharpe (aa)",
+                                          "p_boot": "p (boot)", "p_valor": "p (JK)"})
+    test_show = test_show.set_index("par")[
+        ["ΔSharpe (aa)", "IC95 (aa)", "p (boot)", "p (JK)", "n"]]
+    test_show.index.name = "comparação"
+    tabela(doc, test_show,
+           "Tabela 5 — Diferença de Índice de Sharpe (líquido): IC95 por bootstrap e p-valores",
+           fmt=lambda c, v: f"{int(v)}" if c == "n" else f"{v:+.2f}")
+
+    h2(doc, "Robustez por sub-período")
+    par(doc,
+        "Como o período fora da amostra cobre uma única janela (2023–2025), a série foi "
+        "partida em dois sub-períodos consecutivos de tamanho igual e a hipótese de "
+        "Pozzi foi reavaliada em cada um (Tabela 6). O resultado é honesto e importante: "
+        "a superioridade da periferia se concentra no primeiro sub-período, de mercado "
+        "mais fraco, e se inverte no segundo, de recuperação. Em outras palavras, "
+        "“investir na periferia” comporta-se como uma estratégia defensiva — protege "
+        "mais nas quedas do que ganha nas altas —, e a vantagem observada na janela "
+        "completa é dependente de regime, não um efeito estável em todo o ciclo.")
+    subper_show = subper.copy()
+    keep = ["inicio", "fim", "n"] + [c for c in subper_show.columns
+                                     if c.startswith("sharpe_perif") or
+                                     c.startswith("sharpe_central") or c == "sharpe_benchmark"]
+    subper_show = subper_show[keep]
+    tabela(doc, subper_show,
+           "Tabela 6 — Índice de Sharpe líquido por sub-período (centro × periferia × benchmark)",
+           fmt=lambda c, v: f"{int(v)}" if c == "n" else f"{v:+.2f}")
 
     h2(doc, "Comparação GPMF × AGM (sob metodologia idêntica)")
     par(doc,
         "Aplicando o mesmo arcabouço à AGM (árvore com N−1 arestas) sobre exatamente o "
-        "mesmo universo e janela, obtém-se a Tabela 5. O GPMF supera a AGM nas três "
+        "mesmo universo e janela, obtém-se a Tabela 7. O GPMF supera a AGM nas três "
         "carteiras. Estes números são uma referência interna; a comparação oficial do "
         "trabalho conjunto deve usar os resultados do braço AGM do parceiro (ver Seção "
         "“Comparação com o braço AGM”).")
     comp_show = comp.set_index("filtro")
     tabela(doc, comp_show.round(4),
-           "Tabela 5 — GPMF × AGM × benchmark (carteiras de tamanho 10, líquido)",
+           "Tabela 7 — GPMF × AGM × benchmark (carteiras de tamanho 10, líquido)",
            fmt=lambda c, v: (f"{v*100:.2f}%" if c in ("ret_liq", "dd") else f"{v:.3f}"))
     fig(doc, "comparacao_gpmf_mst.png",
         "Figura 5 — GPMF vs. AGM: retorno acumulado líquido das carteiras de tamanho 10.")
@@ -339,24 +405,33 @@ def main():
     par(doc,
         "O relatório parcial encontrou, na avaliação estática, vantagem das carteiras "
         "centrais — resultado aparentemente contrário a Pozzi et al. (2013). Com a "
-        "convenção de dividendos corrigida e o universo determinístico, essa vantagem "
-        "desaparece: já dentro da amostra as carteiras periféricas apresentam melhor "
-        "Índice de Sharpe, e, mais importante, fora da amostra elas superam as centrais "
-        "em todos os tamanhos testados, com o GPMF reconstruído a cada mês. A evidência, "
-        "portanto, passa a favorecer a hipótese da periferia para os FIIs. O GPMF "
-        "também supera a AGM sob metodologia idêntica, coerente com a maior quantidade "
-        "de estrutura preservada pelo grafo planar.")
+        "convenção de dividendos corrigida, o universo determinístico e o Índice de "
+        "Sharpe medido sobre o excesso ao CDI, essa vantagem desaparece: na janela "
+        "completa fora da amostra as carteiras periféricas superam as centrais em todos "
+        "os tamanhos testados, com o GPMF reconstruído a cada mês. A evidência, portanto, "
+        "passa a favorecer qualitativamente a hipótese da periferia para os FIIs, e o "
+        "GPMF supera a AGM sob metodologia idêntica, coerente com a maior quantidade de "
+        "estrutura preservada pelo grafo planar. Cabe notar que, ao se descontar o CDI "
+        "(em média elevado no período), todos os Índices de Sharpe — inclusive o do "
+        "benchmark — tornam-se negativos; a leitura relevante é comparativa, não o sinal.")
     par(doc,
-        "Há, contudo, duas ressalvas importantes. Primeira: líquido de custos de "
-        "transação e imposto, o benchmark passivo (IFIX) supera todas as carteiras "
-        "ativas — o giro mensal das estratégias periféricas e híbridas, de maior "
-        "rotatividade, corrói o ganho bruto; a carteira Central-10 chega a ficar "
-        "significativamente abaixo do benchmark (p ≈ 0,05). Segunda: entre as próprias "
-        "carteiras GPMF, as diferenças de Índice de Sharpe não atingem significância "
-        "estatística a 5%. Assim, embora a evidência fora da amostra seja "
-        "qualitativamente favorável à periferia e ao GPMF, a vantagem não sobrevive aos "
-        "custos nem alcança significância — o que reforça a importância de janelas mais "
-        "longas e de regras de seleção que controlem o giro em trabalhos futuros.")
+        "Há, contudo, três ressalvas que delimitam o alcance da conclusão. Primeira: "
+        "líquido de custos de transação e imposto, nenhuma carteira ativa supera o "
+        "benchmark passivo (IFIX); há indício (pelo bootstrap, mas não confirmado pelo "
+        "teste mais conservador de Jobson-Korkie) de que a Central-10 e a Híbrida-10 "
+        "fiquem atrás do índice, enquanto a Periférica-10 apenas o empata — ou seja, a "
+        "periferia, no melhor cenário, iguala a gestão passiva. Segunda: entre as "
+        "próprias carteiras GPMF, a "
+        "diferença periferia−centro não atinge significância estatística (o intervalo de "
+        "confiança por bootstrap cruza zero). Terceira, e mais importante para a "
+        "interpretação: a superioridade da periferia não é estável no tempo — concentra-se "
+        "no sub-período de mercado fraco e inverte-se na recuperação, comportando-se como "
+        "uma estratégia defensiva, dependente de regime. Em síntese, a evidência fora da "
+        "amostra é qualitativamente favorável à periferia e ao GPMF, mas a vantagem não "
+        "sobrevive aos custos, não alcança significância e não é robusta ao longo do "
+        "ciclo — o que reforça a importância de janelas mais longas, de regras de seleção "
+        "que controlem o giro e de testes em múltiplos regimes de mercado em trabalhos "
+        "futuros.")
 
     # ---------------- Comparação com Augusto (placeholder) ----------------
     h1(doc, "Comparação com o braço AGM (a consolidar com o parceiro)")

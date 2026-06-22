@@ -1,0 +1,7 @@
+filtro,tamanho,pozzi_bruto,pozzi_liq,sharpe_peri_bruto,sharpe_cent_bruto
+GPMF,10,True,True,-0.878,-1.398
+GPMF,15,True,True,-0.984,-1.29
+GPMF,20,True,True,-0.963,-1.285
+AGM,10,False,False,-1.216,-1.114
+AGM,15,True,True,-1.042,-1.386
+AGM,20,True,True,-0.982,-1.276

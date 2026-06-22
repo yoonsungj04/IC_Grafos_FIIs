@@ -29,6 +29,10 @@ _CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 PRECOS_CSV = config.RAW_DIR / "precos_ajustados.csv"
 PRECOS_BRUTOS_CSV = config.RAW_DIR / "precos_brutos.csv"
 DIVIDENDOS_CSV = config.RAW_DIR / "dividendos.csv"
+CDI_CSV = config.RAW_DIR / "cdi.csv"
+
+_BCB_SGS_URL = ("https://api.bcb.gov.br/dados/serie/bcdata.sgs.{cod}/dados"
+                "?formato=json&dataInicial={ini}&dataFinal={fim}")
 
 
 def _epoch(data: str) -> int:
@@ -100,6 +104,37 @@ def baixar_universo(tickers: list[str] | None = None, pausa: float = 0.8,
         print(f"tickers sem dados: {', '.join(falhas)}")
 
     return {"ajustado": painel_aj, "bruto": painel_br, "dividendo": painel_dv}
+
+
+def baixar_cdi(start: str = config.START_DATE, end: str = config.END_DATE,
+               salvar: bool = True) -> pd.Series:
+    """
+    Baixa o CDI diário (% ao dia) da série 12 do SGS/BCB e devolve a taxa em
+    decimal por pregão (ex.: 0,040168% -> 0,00040168). É a única chamada de rede
+    além dos preços; o resultado é congelado em data/raw/cdi.csv.
+    """
+    def _br(d: str) -> str:  # YYYY-MM-DD -> DD/MM/YYYY (formato do SGS)
+        return datetime.strptime(d, "%Y-%m-%d").strftime("%d/%m/%Y")
+
+    url = _BCB_SGS_URL.format(cod=config.BCB_CDI_SERIES, ini=_br(start), fim=_br(end))
+    r = _SESSION.get(url, timeout=30)
+    r.raise_for_status()
+    df = pd.DataFrame(r.json())
+    idx = pd.to_datetime(df["data"], format="%d/%m/%Y")
+    cdi = pd.Series(df["valor"].astype(float).values / 100.0, index=idx, name="cdi")
+    cdi = cdi.sort_index()
+    if salvar:
+        cdi.to_csv(CDI_CSV)
+        print(f"CDI salvo em {CDI_CSV} ({len(cdi)} pregões, "
+              f"média {cdi.mean()*config.TRADING_DAYS_PER_YEAR*100:.1f}% a.a.)")
+    return cdi
+
+
+def carregar_cdi() -> pd.Series:
+    """Carrega o CDI diário (decimal por pregão) do cache; baixa se faltar."""
+    if not CDI_CSV.exists():
+        return baixar_cdi()
+    return pd.read_csv(CDI_CSV, index_col=0, parse_dates=True).iloc[:, 0].sort_index()
 
 
 def carregar_precos(ajustado: bool = True) -> pd.DataFrame:
