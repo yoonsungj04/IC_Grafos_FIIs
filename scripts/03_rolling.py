@@ -78,18 +78,21 @@ def _figura_curvas(oos: pd.DataFrame, bench) -> None:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from src.metrics import curva_acumulada
+        from src import plotting
+        plotting.aplicar_estilo_pb()
 
         fig, ax = plt.subplots(figsize=(10, 6))
-        for lbl in ("central_10", "peripheral_10", "hybrid_10"):
-            ax.plot(oos.index, curva_acumulada(oos[lbl]), label=lbl)
+        for i, lbl in enumerate(("central_10", "peripheral_10", "hybrid_10")):
+            ax.plot(oos.index, curva_acumulada(oos[lbl]), label=lbl,
+                    **plotting.estilo_linha(i))
         if bench is not None:
-            ax.plot(bench.index, curva_acumulada(bench), label="benchmark", color="k", ls="--")
+            ax.plot(bench.index, curva_acumulada(bench), label="benchmark",
+                    **plotting.estilo_linha(3))
         ax.set_title("Retorno acumulado fora da amostra (sem custos)")
         ax.set_ylabel("crescimento de R$ 1")
         ax.legend()
-        fig.tight_layout()
         caminho = config.FIGURES_DIR / "curvas_oos_bruto.png"
-        fig.savefig(caminho, dpi=130)
+        plotting.salvar_pb(fig, caminho)
         print(f"\nfigura das curvas em {caminho}")
     except Exception as e:
         print(f"(figura ignorada: {e})")

@@ -59,7 +59,35 @@ def main() -> None:
     print("\n" + tabela.to_string(index=False))
     tabela.to_csv(config.TABLES_DIR / "tabela_comparacao_gpmf_mst.csv", index=False)
 
+    _significancia_pozzi(curvas, rf)
     _figura(curvas, bench)
+
+
+def _significancia_pozzi(curvas, rf) -> None:
+    """
+    Testa, para CADA filtro, se a diferença de Sharpe Periférica-10 menos
+    Central-10 (a inversão de Pozzi) é estatisticamente significativa, com
+    Jobson-Korkie (Memmel) e bootstrap de blocos. Responde diretamente à dúvida
+    do revisor: a inversão da MST em N=10 é real ou é ruído amostral?
+    """
+    print("\n--- significância da inversão de Pozzi (Periférica-10 - Central-10), por filtro ---")
+    linhas = []
+    for nome in ("GPMF", "MST"):
+        peri = curvas[f"{nome}-peripheral"]
+        cent = curvas[f"{nome}-central"]
+        jk = metrics.jobson_korkie(peri, cent, rf_diaria=rf)
+        bs = metrics.bootstrap_diff_sharpe(peri, cent, rf_diaria=rf)
+        cruza_zero = bs["ic_baixo"] <= 0 <= bs["ic_alto"]
+        print(f"{nome}: ΔSharpe(aa)={bs['diff']:+.2f}  "
+              f"IC95=[{bs['ic_baixo']:+.2f}, {bs['ic_alto']:+.2f}]  "
+              f"p_boot={bs['p_boot']:.3f}  p_JK={jk['p_valor']:.3f}  "
+              f"signif.={'não' if cruza_zero else 'sim'}")
+        linhas.append({"filtro": nome, "diff_sharpe": jk["diff_sharpe"], "z": jk["z"],
+                       "p_valor": jk["p_valor"], "diff_sharpe_aa": bs["diff"],
+                       "ic95_baixo": bs["ic_baixo"], "ic95_alto": bs["ic_alto"],
+                       "p_boot": bs["p_boot"], "n": jk["n"]})
+    pd.DataFrame(linhas).round(4).to_csv(
+        config.TABLES_DIR / "pozzi_significancia.csv", index=False)
 
 
 def _figura(curvas, bench) -> None:
@@ -68,23 +96,28 @@ def _figura(curvas, bench) -> None:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from src.metrics import curva_acumulada
+        from src import plotting
+        plotting.aplicar_estilo_pb()
 
         idx = list(curvas.values())[0].index
         fig, ax = plt.subplots(figsize=(11, 6))
+        # Em P&B: o FILTRO é distinguido pelo traço (GPMF sólido, MST tracejado)
+        # e o TIPO de carteira pelo tom de cinza + marcador.
         estilos = {"GPMF": "-", "MST": "--"}
-        cores = {"central": "C0", "peripheral": "C1", "hybrid": "C2"}
+        cinza = {"central": "0.0", "peripheral": "0.45", "hybrid": "0.65"}
+        marca = {"central": "o", "peripheral": "s", "hybrid": "^"}
         for chave, serie in curvas.items():
             nome, tipo = chave.split("-")
-            ax.plot(serie.index, curva_acumulada(serie), estilos[nome],
-                    color=cores[tipo], label=chave)
+            ax.plot(serie.index, curva_acumulada(serie), label=chave,
+                    color=cinza[tipo], linestyle=estilos[nome], linewidth=1.6,
+                    marker=marca[tipo], markevery=0.12, markersize=4)
         ax.plot(idx, curva_acumulada(bench.reindex(idx).dropna()),
-                color="k", ls=":", label="benchmark")
+                color="0.0", ls=":", linewidth=1.4, label="benchmark")
         ax.set_title("GPMF vs MST — carteiras (tam. 10), líquido, fora da amostra")
         ax.set_ylabel("crescimento de R$ 1")
         ax.legend(ncol=2, fontsize=8)
-        fig.tight_layout()
         caminho = config.FIGURES_DIR / "comparacao_gpmf_mst.png"
-        fig.savefig(caminho, dpi=130)
+        plotting.salvar_pb(fig, caminho)
         print(f"\nfigura comparativa em {caminho}")
     except Exception as e:
         print(f"(figura ignorada: {e})")

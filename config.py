@@ -105,7 +105,10 @@ CENTRALITY_MEASURES = ("degree", "betweenness", "closeness", "eigenvector")
 PORTFOLIO_SIZES = (10, 15, 20)
 PORTFOLIO_TYPES = ("central", "peripheral", "hybrid")
 WEIGHTING = "equal"                # "equal" | "inverse_vol"
-RANKING_MEASURE = "degree"         # medida usada na ordenação para formar carteiras
+# Escore COMPOSTO (média de grau, intermediação e proximidade normalizados) é a
+# regra de seleção do artigo (Eq. do escore composto) e a mesma usada pelo braço
+# AGM, garantindo comparação justa GPMF vs MST sob critério idêntico.
+RANKING_MEASURE = "composite"      # medida usada na ordenação para formar carteiras
 
 # --------------------------------------------------------------------------- #
 # Engine de janela rolante (validação fora da amostra)
@@ -139,3 +142,11 @@ BCB_CDI_SERIES = 12               # série diária do CDI (% a.d.) no SGS do BCB
 TRADING_DAYS_PER_YEAR = 252
 RANDOM_SEED = 42                   # bootstrap e qualquer etapa estocástica
 N_BOOTSTRAP = 5000                # reamostragens para o IC da diferença de Sharpe
+
+# --------------------------------------------------------------------------- #
+# Figuras
+#   O template da SBC exige imagens em preto e branco / tons de cinza, com
+#   resolução de 150-300 dpi para tons de cinza (sem resolução excessiva). Todas
+#   as figuras são geradas em escala de cinza (ver src/plotting.py) a FIG_DPI.
+# --------------------------------------------------------------------------- #
+FIG_DPI = 200                      # 150-300 dpi (regra de imagens do template SBC)
