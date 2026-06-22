@@ -142,11 +142,3 @@ BCB_CDI_SERIES = 12               # série diária do CDI (% a.d.) no SGS do BCB
 TRADING_DAYS_PER_YEAR = 252
 RANDOM_SEED = 42                   # bootstrap e qualquer etapa estocástica
 N_BOOTSTRAP = 5000                # reamostragens para o IC da diferença de Sharpe
-
-# --------------------------------------------------------------------------- #
-# Figuras
-#   O template da SBC exige imagens em preto e branco / tons de cinza, com
-#   resolução de 150-300 dpi para tons de cinza (sem resolução excessiva). Todas
-#   as figuras são geradas em escala de cinza (ver src/plotting.py) a FIG_DPI.
-# --------------------------------------------------------------------------- #
-FIG_DPI = 200                      # 150-300 dpi (regra de imagens do template SBC)

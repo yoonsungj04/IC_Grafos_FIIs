@@ -112,22 +112,19 @@ def _figura_liquido(oos, liquidos, bench) -> None:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from src.metrics import curva_acumulada
-        from src import plotting
-        plotting.aplicar_estilo_pb()
 
         fig, ax = plt.subplots(figsize=(10, 6))
-        for i, lbl in enumerate(("central_10", "peripheral_10", "hybrid_10")):
-            ax.plot(oos.index, curva_acumulada(liquidos[lbl]),
-                    label=f"{lbl} (líq.)", **plotting.estilo_linha(i))
+        for lbl in ("central_10", "peripheral_10", "hybrid_10"):
+            ax.plot(oos.index, curva_acumulada(liquidos[lbl]), label=f"{lbl} (líq.)")
         if bench is not None:
             b = bench.reindex(oos.index).dropna()
-            ax.plot(b.index, curva_acumulada(b), label="benchmark",
-                    **plotting.estilo_linha(3))
+            ax.plot(b.index, curva_acumulada(b), label="benchmark", color="k", ls="--")
         ax.set_title("Retorno acumulado fora da amostra (líquido de custos e IR)")
         ax.set_ylabel("crescimento de R$ 1")
         ax.legend()
+        fig.tight_layout()
         caminho = config.FIGURES_DIR / "curvas_oos_liquido.png"
-        plotting.salvar_pb(fig, caminho)
+        fig.savefig(caminho, dpi=130)
         print(f"\nfigura líquida em {caminho}")
     except Exception as e:
         print(f"(figura ignorada: {e})")

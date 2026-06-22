@@ -96,28 +96,23 @@ def _figura(curvas, bench) -> None:
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from src.metrics import curva_acumulada
-        from src import plotting
-        plotting.aplicar_estilo_pb()
 
         idx = list(curvas.values())[0].index
         fig, ax = plt.subplots(figsize=(11, 6))
-        # Em P&B: o FILTRO é distinguido pelo traço (GPMF sólido, MST tracejado)
-        # e o TIPO de carteira pelo tom de cinza + marcador.
         estilos = {"GPMF": "-", "MST": "--"}
-        cinza = {"central": "0.0", "peripheral": "0.45", "hybrid": "0.65"}
-        marca = {"central": "o", "peripheral": "s", "hybrid": "^"}
+        cores = {"central": "C0", "peripheral": "C1", "hybrid": "C2"}
         for chave, serie in curvas.items():
             nome, tipo = chave.split("-")
-            ax.plot(serie.index, curva_acumulada(serie), label=chave,
-                    color=cinza[tipo], linestyle=estilos[nome], linewidth=1.6,
-                    marker=marca[tipo], markevery=0.12, markersize=4)
+            ax.plot(serie.index, curva_acumulada(serie), estilos[nome],
+                    color=cores[tipo], label=chave)
         ax.plot(idx, curva_acumulada(bench.reindex(idx).dropna()),
-                color="0.0", ls=":", linewidth=1.4, label="benchmark")
+                color="k", ls=":", label="benchmark")
         ax.set_title("GPMF vs MST — carteiras (tam. 10), líquido, fora da amostra")
         ax.set_ylabel("crescimento de R$ 1")
         ax.legend(ncol=2, fontsize=8)
+        fig.tight_layout()
         caminho = config.FIGURES_DIR / "comparacao_gpmf_mst.png"
-        plotting.salvar_pb(fig, caminho)
+        fig.savefig(caminho, dpi=130)
         print(f"\nfigura comparativa em {caminho}")
     except Exception as e:
         print(f"(figura ignorada: {e})")

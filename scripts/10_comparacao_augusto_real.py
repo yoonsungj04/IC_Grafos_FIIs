@@ -106,31 +106,24 @@ def _figura(gpmf_liq, ag_simples, bench, ini, fim):
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from src.metrics import curva_acumulada
-        from src import plotting
-        plotting.aplicar_estilo_pb()
 
         idx = bench.index
-        # Em P&B: o PAR de carteiras é distinguido pelo tom de cinza + marcador,
-        # e o filtro (GPMF/AGM) pelo traço (sólido/tracejado).
         fig, ax = plt.subplots(figsize=(11, 6))
         ax.plot(idx, curva_acumulada(gpmf_liq["peripheral_5"].loc[ini:fim]),
-                color="0.0", ls="-", lw=1.6, marker="o", markevery=0.12, markersize=4,
-                label="GPMF Periférica-5 (Yoon)")
+                color="C2", label="GPMF Periférica-5 (Yoon)")
         ax.plot(idx, curva_acumulada(ag_simples["AGM_Periferica_5"].loc[ini:fim]),
-                color="0.0", ls="--", lw=1.6, marker="o", markevery=0.12, markersize=4,
-                label="AGM Periférica-5 (Augusto)")
+                color="C2", ls="--", label="AGM Periférica-5 (Augusto)")
         ax.plot(idx, curva_acumulada(gpmf_liq["central_10"].loc[ini:fim]),
-                color="0.5", ls="-", lw=1.6, marker="s", markevery=0.12, markersize=4,
-                label="GPMF Central-10 (Yoon)")
+                color="C3", label="GPMF Central-10 (Yoon)")
         ax.plot(idx, curva_acumulada(ag_simples["AGM_Central_10"].loc[ini:fim]),
-                color="0.5", ls="--", lw=1.6, marker="s", markevery=0.12, markersize=4,
-                label="AGM Central-10 (Augusto)")
-        ax.plot(idx, curva_acumulada(bench), color="0.0", ls=":", lw=1.4, label="benchmark")
+                color="C3", ls="--", label="AGM Central-10 (Augusto)")
+        ax.plot(idx, curva_acumulada(bench), color="k", ls=":", label="benchmark")
         ax.set_title("GPMF (Yoon) vs AGM (Augusto) — período comum, líquido, fora da amostra")
         ax.set_ylabel("crescimento de R$ 1")
         ax.legend(fontsize=8)
+        fig.tight_layout()
         caminho = config.FIGURES_DIR / "comparacao_augusto_real.png"
-        plotting.salvar_pb(fig, caminho)
+        fig.savefig(caminho, dpi=130)
         print(f"\nfigura salva em {caminho}")
     except Exception as e:
         print(f"(figura ignorada: {e})")

@@ -61,26 +61,18 @@ def _figura_grafo(G, cent) -> None:
         import matplotlib.pyplot as plt
         import networkx as nx
 
-        from src import plotting
-        plotting.aplicar_estilo_pb()
-
         pos = nx.planar_layout(G)
         c = cent["composite"]
-        # Em P&B: cor = escore composto no mapa de cinza (claro=periferia,
-        # escuro=centro); deslocamos o vmin para que nós de baixa centralidade
-        # não fiquem brancos (invisíveis), e contornamos todos os nós em preto.
-        vmin = float(c.min()) - 0.45 * float(c.max() - c.min())
         fig, ax = plt.subplots(figsize=(11, 9))
-        nx.draw_networkx_edges(G, pos, alpha=0.35, edge_color="0.3", ax=ax)
+        nx.draw_networkx_edges(G, pos, alpha=0.3, ax=ax)
         nx.draw_networkx_nodes(G, pos, node_size=c * 3000 + 80,
-                               node_color=c, cmap=plotting.CMAP_PB,
-                               vmin=vmin, vmax=float(c.max()),
-                               edgecolors="black", linewidths=0.5, ax=ax)
+                               node_color=c, cmap="viridis", ax=ax)
         nx.draw_networkx_labels(G, pos, font_size=7, ax=ax)
         ax.set_title("GPMF dos FIIs (tamanho/cor = escore de centralidade composto)")
         ax.axis("off")
+        fig.tight_layout()
         caminho = config.FIGURES_DIR / "gpmf_estatico.png"
-        plotting.salvar_pb(fig, caminho)
+        fig.savefig(caminho, dpi=130)
         print(f"figura do grafo em {caminho}")
     except Exception as e:
         print(f"(figura do grafo ignorada: {e})")
