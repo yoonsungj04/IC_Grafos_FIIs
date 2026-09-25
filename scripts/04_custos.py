@@ -2,7 +2,7 @@
 Custos, tributos e testes de significância (Fase C).
 
 Aplica custo de transação (0,3% sobre o giro) e imposto de ganho de capital
-(15%) sobre as carteiras fora da amostra, compara bruto vs líquido e roda o
+(20%) sobre as carteiras fora da amostra, compara bruto vs líquido e roda o
 teste de Jobson-Korkie para a diferença de Sharpe entre as carteiras e o
 benchmark.
 """
@@ -19,6 +19,8 @@ from src import costs, metrics, riskfree
 
 def main() -> None:
     oos = pd.read_csv(config.PROCESSED_DIR / "retornos_oos.csv", index_col=0, parse_dates=True)
+    oos_preco = pd.read_csv(config.PROCESSED_DIR / "retornos_oos_preco.csv",
+                            index_col=0, parse_dates=True)
     giros = pd.read_csv(config.PROCESSED_DIR / "giros.csv", index_col=0, parse_dates=True)
     bench_path = config.PROCESSED_DIR / "benchmark_oos.csv"
     bench = (pd.read_csv(bench_path, index_col=0, parse_dates=True).iloc[:, 0]
@@ -31,7 +33,7 @@ def main() -> None:
     linhas = []
     liquidos = {}
     for lbl in oos.columns:
-        liq = costs.aplicar_custos_serie(oos[lbl], giros[lbl])
+        liq = costs.aplicar_custos_serie(oos[lbl], giros[lbl], retornos_preco=oos_preco[lbl])
         liquidos[lbl] = liq
         eb = metrics.estatisticas(oos[lbl], rf_diaria=rf)
         el = metrics.estatisticas(liq, rf_diaria=rf)
@@ -47,7 +49,7 @@ def main() -> None:
     tabela.to_csv(config.TABLES_DIR / "tabela_custos.csv")
     pd.DataFrame(liquidos).to_csv(config.PROCESSED_DIR / "retornos_oos_liquidos.csv")
 
-    _decompor_custos(oos, giros, rf)
+    _decompor_custos(oos, oos_preco, giros, rf)
 
     # --- testes de significância sobre o líquido: Jobson-Korkie + bootstrap ---
     print("\n--- diferença de Sharpe líquido (Jobson-Korkie + IC bootstrap 95%) ---")
@@ -77,7 +79,7 @@ def main() -> None:
     _figura_liquido(oos, liquidos, bench)
 
 
-def _decompor_custos(oos, giros, rf) -> None:
+def _decompor_custos(oos, oos_preco, giros, rf) -> None:
     """
     Decompõe o arrasto de desempenho em custo de transação e imposto, isolando
     cada parcela. Reporta giro e custo médios por rebalanceamento (~mensal),
@@ -87,7 +89,7 @@ def _decompor_custos(oos, giros, rf) -> None:
     linhas = []
     for lbl in oos.columns:
         so_custo = costs.aplicar_custos_serie(oos[lbl], giros[lbl], imposto=0.0)
-        liq = costs.aplicar_custos_serie(oos[lbl], giros[lbl])
+        liq = costs.aplicar_custos_serie(oos[lbl], giros[lbl], retornos_preco=oos_preco[lbl])
         rb = metrics.estatisticas(oos[lbl], rf_diaria=rf)["retorno_anual"]
         rc = metrics.estatisticas(so_custo, rf_diaria=rf)["retorno_anual"]
         rl = metrics.estatisticas(liq, rf_diaria=rf)["retorno_anual"]

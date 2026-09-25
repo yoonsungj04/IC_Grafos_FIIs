@@ -17,12 +17,15 @@ import config
 from src import costs, gpmf, metrics, pipeline, riskfree, rolling
 
 
-def _rodar(ret_log, construtor, rf):
-    res = rolling.backtest_rolling(ret_log, construtor=construtor)
-    oos, giros = res["retornos"], res["giros"]
+def _rodar(ret_log, construtor, rf, ret_log_preco=None):
+    res = rolling.backtest_rolling(ret_log, construtor=construtor,
+                                   retornos_preco=ret_log_preco)
+    oos, giros, oos_preco = res["retornos"], res["giros"], res["retornos_preco"]
     linhas = {}
     for lbl in oos.columns:
-        liq = costs.aplicar_custos_serie(oos[lbl], giros[lbl])
+        liq = costs.aplicar_custos_serie(
+            oos[lbl], giros[lbl],
+            retornos_preco=(oos_preco[lbl] if oos_preco is not None else None))
         linhas[lbl] = {
             "sharpe_bruto": metrics.estatisticas(oos[lbl], rf_diaria=rf)["sharpe"],
             "sharpe_liq": metrics.estatisticas(liq, rf_diaria=rf)["sharpe"],
@@ -34,12 +37,13 @@ def _rodar(ret_log, construtor, rf):
 def main():
     dados = pipeline.preparar_dados()
     ret_log = dados["retornos_log"]
+    ret_log_preco = dados["retornos_log_preco"]
     rf = riskfree.serie_rf_diaria(ret_log.index)
 
     filtros = {"GPMF": gpmf.construir_gpmf, "AGM": gpmf.construir_mst}
     tabelas = {}
     for nome, construtor in filtros.items():
-        df, grafos = _rodar(ret_log, construtor, rf)
+        df, grafos = _rodar(ret_log, construtor, rf, ret_log_preco=ret_log_preco)
         df.insert(0, "filtro", nome)
         df.index.name = "carteira"
         tabelas[nome] = df

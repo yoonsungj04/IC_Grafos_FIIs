@@ -22,6 +22,14 @@ def preparar_dados() -> dict:
 
     retornos_log = data_load.calcular_retornos(painel)
 
+    # retornos de PREÇO (fechamento bruto, sem proventos) do MESMO universo e
+    # janela — base do ganho de capital tributável (dividendo isento fica de
+    # fora). Alinhados às mesmas datas dos retornos totais.
+    precos_brutos = data_load.carregar_precos(ajustado=False)
+    painel_bruto = filters.painel_universo(precos_brutos, universo)
+    retornos_log_preco = (data_load.calcular_retornos(painel_bruto)
+                          .reindex(retornos_log.index))
+
     # benchmark (XFIX11 ou IFIX) em retorno simples, alinhado às mesmas datas
     bench_path = config.RAW_DIR / "benchmark.csv"
     benchmark = None
@@ -33,6 +41,7 @@ def preparar_dados() -> dict:
         "precos": painel,
         "universo": universo,
         "retornos_log": retornos_log,
+        "retornos_log_preco": retornos_log_preco,
         "retornos_simples": np.expm1(retornos_log),
         "benchmark": benchmark,
     }

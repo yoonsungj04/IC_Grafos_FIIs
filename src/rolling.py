@@ -31,20 +31,31 @@ def backtest_rolling(retornos: pd.DataFrame,
                      tipos=config.PORTFOLIO_TYPES,
                      tamanhos=config.PORTFOLIO_SIZES,
                      medida: str = config.RANKING_MEASURE,
-                     construtor=gpmf.construir_gpmf) -> dict:
+                     construtor=gpmf.construir_gpmf,
+                     retornos_preco: pd.DataFrame | None = None) -> dict:
     """
     Roda o backtest completo.
 
+    `retornos` são os retornos TOTAIS (preço ajustado por proventos), usados para
+    formar o grafo/centralidade e medir o desempenho. `retornos_preco`, quando
+    informado, são os retornos de PREÇO (fechamento bruto) dos mesmos ativos e
+    datas; com as mesmas carteiras e janelas, produz a série fora da amostra de
+    retorno de PREÇO de cada carteira — base do ganho de capital tributável.
+
     Devolve um dicionário com:
-      retornos  -> DataFrame (datas x carteiras) de retornos simples fora da amostra
-      giros     -> DataFrame (datas de rebalance x carteiras) de turnover
-      composicao-> dict {label: [(data, {ticker: peso}), ...]}
-      grafos    -> lista de resumos do GPMF a cada formação
+      retornos      -> DataFrame (datas x carteiras) de retornos simples (total) OOS
+      retornos_preco-> DataFrame idem, só preço (None se não pedido)
+      giros         -> DataFrame (datas de rebalance x carteiras) de turnover
+      composicao    -> dict {label: [(data, {ticker: peso}), ...]}
+      grafos        -> lista de resumos do GPMF a cada formação
     """
     datas = retornos.index
     labels = _labels(tipos, tamanhos)
+    if retornos_preco is not None:
+        retornos_preco = retornos_preco.reindex(datas)
 
     oos = {lbl: [] for lbl in labels}
+    oos_preco = {lbl: [] for lbl in labels}
     giros = {lbl: {} for lbl in labels}
     composicao = {lbl: [] for lbl in labels}
     pesos_ant = {lbl: {} for lbl in labels}
@@ -54,6 +65,8 @@ def backtest_rolling(retornos: pd.DataFrame,
     while inicio + test_days <= len(datas):
         janela_form = retornos.iloc[inicio - formation_days:inicio]
         janela_teste = retornos.iloc[inicio:inicio + test_days]
+        janela_teste_preco = (retornos_preco.iloc[inicio:inicio + test_days]
+                              if retornos_preco is not None else None)
         data_rebal = janela_teste.index[0]
 
         # formação: grafo filtrado + centralidade sobre a janela passada
@@ -68,6 +81,9 @@ def backtest_rolling(retornos: pd.DataFrame,
                 pesos = portfolio.selecionar_carteira(cent, tipo, tam, medida)
                 giros[lbl][data_rebal] = turnover(pesos_ant[lbl], pesos)
                 oos[lbl].append(portfolio.retorno_carteira(janela_teste, pesos))
+                if janela_teste_preco is not None:
+                    oos_preco[lbl].append(
+                        portfolio.retorno_carteira(janela_teste_preco, pesos))
                 composicao[lbl].append((data_rebal, pesos))
                 pesos_ant[lbl] = pesos
 
@@ -75,9 +91,13 @@ def backtest_rolling(retornos: pd.DataFrame,
 
     retornos_oos = pd.DataFrame({lbl: pd.concat(oos[lbl]) for lbl in labels}).sort_index()
     df_giros = pd.DataFrame(giros).sort_index()
+    retornos_oos_preco = (
+        pd.DataFrame({lbl: pd.concat(oos_preco[lbl]) for lbl in labels}).sort_index()
+        if retornos_preco is not None else None)
 
     return {
         "retornos": retornos_oos,
+        "retornos_preco": retornos_oos_preco,
         "giros": df_giros,
         "composicao": composicao,
         "grafos": pd.DataFrame(resumos_grafo).set_index("data"),

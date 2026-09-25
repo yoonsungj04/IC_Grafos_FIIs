@@ -4,7 +4,7 @@ Construção do Grafo Planar Maximamente Filtrado (GPMF).
 A partir dos retornos calcula-se a matriz de correlação, dela a matriz de
 distância d_ij = sqrt(2 * (1 - rho_ij)) e, por fim, o GPMF: ordenam-se as arestas
 por distância crescente (pares mais correlacionados primeiro) e adicionam-se uma
-a uma enquanto o grafo continua planar (teste de Boyer-Myrvold via
+a uma enquanto o grafo continua planar (teste Left-Right de planaridade via
 networkx.check_planarity). Um GPMF conexo sobre N vértices tem exatamente
 3N - 6 arestas.
 """

@@ -31,7 +31,7 @@ do provedor já reinveste dividendos, de modo que o retorno é
 
 **Grafo.** Correlação de Pearson → distância `d_ij = sqrt(2(1-ρ_ij))` → GPMF por
 inserção gulosa de arestas de menor distância preservando a planaridade
-(Boyer-Myrvold).
+(teste Left-Right de planaridade).
 
 **Carteiras.** Centralidades de grau, intermediação, proximidade e autovetor.
 Carteiras de 10/15/20 ativos: Central (topo), Periférica (base) e Híbrida, com
@@ -41,7 +41,7 @@ pesos iguais.
 avança 22; reconstrói o GPMF a cada passo e emenda as séries de manutenção. Isso
 remove o viés de look-ahead da avaliação estática.
 
-**Custos.** 0,3% sobre o giro por rebalanceamento e 15% de imposto sobre ganho
+**Custos.** 0,3% sobre o giro por rebalanceamento e 20% de imposto sobre ganho
 de capital realizado (dividendos isentos para PF). Significância pelo teste de
 Jobson-Korkie com correção de Memmel (2003).
 

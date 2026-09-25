@@ -25,7 +25,7 @@ def main() -> None:
     print(f"formação {config.FORMATION_DAYS}d / teste {config.TEST_DAYS}d / "
           f"passo {config.ROLL_STEP_DAYS}d\n")
 
-    res = rolling.backtest_rolling(ret_log)
+    res = rolling.backtest_rolling(ret_log, retornos_preco=dados["retornos_log_preco"])
     oos = res["retornos"]
     print(f"período fora da amostra: {oos.index[0].date()} a {oos.index[-1].date()} "
           f"({len(oos)} pregões, {len(res['grafos'])} rebalanceamentos)\n")
@@ -53,6 +53,7 @@ def main() -> None:
 
     # persiste séries para os próximos scripts
     oos.to_csv(config.PROCESSED_DIR / "retornos_oos.csv")
+    res["retornos_preco"].to_csv(config.PROCESSED_DIR / "retornos_oos_preco.csv")
     res["giros"].to_csv(config.PROCESSED_DIR / "giros.csv")
     g.to_csv(config.PROCESSED_DIR / "grafos_rolling.csv")
     if bench is not None:

@@ -13,7 +13,7 @@ yfinance==0.2.51
 # real browser handshake so yfinance gets through (HTTP 200 instead of 429).
 curl_cffi==0.15.0
 
-# --- graph: GPMF/PMFG construction + planarity (Boyer-Myrvold via check_planarity) ---
+# --- graph: GPMF/PMFG construction + planarity (teste Left-Right via check_planarity) ---
 networkx==3.3
 
 # --- statistics: Jobson-Korkie / bootstrap significance tests (Phase C) ---

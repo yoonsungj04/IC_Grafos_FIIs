@@ -83,7 +83,7 @@ BENCHMARK_FALLBACK = "XFIX11"
 #   distância d_ij = sqrt(2 * (1 - rho_ij))
 #   o GPMF é planar e, quando conexo sobre N vértices, tem 3N - 6 arestas;
 #   é construído adicionando as arestas de menor distância enquanto a
-#   planaridade é preservada (Boyer-Myrvold via networkx.check_planarity).
+#   planaridade é preservada (teste Left-Right via networkx.check_planarity).
 # --------------------------------------------------------------------------- #
 CORR_METHOD = "pearson"            # "pearson" | "spearman"
 
@@ -120,11 +120,15 @@ ROLL_STEP_DAYS = 22
 
 # --------------------------------------------------------------------------- #
 # Custos e tributos
-#   Pessoa física: dividendos isentos de IR; ganho de capital tributado em 15%;
-#   custo de transação de 0,3% sobre o giro (round-trip).
+#   Pessoa física (Lei 11.033/2004): rendimentos de FII isentos de IR; ganho de
+#   capital na alienação de cotas tributado em 20% (SEM a isenção de R$ 20 mil/mês
+#   das ações — essa isenção não se aplica a FII), recolhido via DARF 6015; custo
+#   de transação de 0,3% sobre o giro (round-trip). O imposto incide apenas sobre
+#   o ganho de PREÇO REALIZADO (fração vendida = giro); dividendos ficam fora da
+#   base tributável.
 # --------------------------------------------------------------------------- #
 TRANSACTION_COST = 0.003           # 0,3% por giro
-CAPITAL_GAINS_TAX = 0.15           # 15% sobre o ganho de capital realizado
+CAPITAL_GAINS_TAX = 0.20           # 20% sobre o ganho de capital realizado (FII)
 DIVIDENDS_TAX = 0.0                # FIIs: dividendos isentos para PF
 
 # --------------------------------------------------------------------------- #
