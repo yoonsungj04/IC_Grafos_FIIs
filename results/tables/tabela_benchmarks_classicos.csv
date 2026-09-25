@@ -1,0 +1,7 @@
+estrategia,ret_liq_aa,vol_aa,sharpe_liq,dd_max,giro_medio
+equal_weight,0.0339,0.0688,-1.177,-0.1906,0.02
+min_var,0.0673,0.0642,-0.7688,-0.158,0.1249
+min_var_shrink,0.068,0.0628,-0.7769,-0.1624,0.101
+tangency,0.0306,0.0804,-1.0345,-0.1882,0.251
+gpmf_peripheral_10_minvar,0.0261,0.0822,-1.0636,-0.2323,0.499
+gpmf_central_10_minvar,-0.0135,0.0803,-1.5807,-0.1683,0.4488

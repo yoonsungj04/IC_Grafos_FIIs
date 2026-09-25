@@ -1,0 +1,30 @@
+% Tabela 3 (tab:oos) -- recalculada com base tributaria unica
+Central    & 10 & $-1.55$ & $-1.15$ \\
+Central    & 15 & $-1.36$ & $-1.49$ \\
+Central    & 20 & $-1.49$ & $-1.41$ \\
+Peripheral & 10 & $-1.10$ & $-1.25$ \\
+Peripheral & 15 & $-0.94$ & $-1.22$ \\
+Peripheral & 20 & $-0.95$ & $-1.12$ \\
+Hybrid     & 10 & $-1.07$ & $-1.49$ \\
+Hybrid     & 15 & $-1.19$ & $-1.41$ \\
+Hybrid     & 20 & $-1.44$ & $-1.30$ \\
+
+% Tabela 5 (tab:classical) -- linhas completas
+\multicolumn{6}{@{}l}{\textit{Passive}}\\
+IFIX (index)                     & $+4.9\%$ & 7.3\% & $-0.91$ & $-15.6\%$ & -- \\
+Equal weight ($1/N$, all 51)     & $+3.4\%$ & 6.9\% & $-1.18$ & $-19.1\%$ & 0.02 \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Classical mean--variance}}\\
+Minimum variance                 & $+6.7\%$ & 6.4\% & $-0.77$ & $-15.8\%$ & 0.12 \\
+Minimum variance (shrinkage)     & $+6.8\%$ & 6.3\% & $-0.78$ & $-16.2\%$ & 0.10 \\
+Tangency (max.\ Sharpe)          & $+3.1\%$ & 8.0\% & $-1.03$ & $-18.8\%$ & 0.25 \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Network selection, equal weights}}\\
+PMFG Central-10                  & $-1.4\%$ & 8.3\% & $-1.55$ & $-20.4\%$ & 0.28 \\
+PMFG Peripheral-10               & $+3.0\%$ & 7.6\% & $-1.10$ & $-20.4\%$ & 0.46 \\
+PMFG Peripheral-20               & $+5.1\%$ & 6.8\% & $-0.95$ & $-17.4\%$ & 0.36 \\
+MST Peripheral-10                & $+2.2\%$ & 7.4\% & $-1.25$ & $-23.0\%$ & 0.44 \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Network selection, optimised weights}}\\
+PMFG Peripheral-10 $+$ min.\ var.& $+2.6\%$ & 8.2\% & $-1.06$ & $-23.2\%$ & 0.50 \\
+PMFG Central-10 $+$ min.\ var.   & $-1.4\%$ & 8.0\% & $-1.58$ & $-16.8\%$ & 0.45 \\
