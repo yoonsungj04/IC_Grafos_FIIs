@@ -73,3 +73,15 @@ superou todas as carteiras; menos negativo é melhor.
   significativa.
 
 Rascunho do artigo: [docs/artigo.md](docs/artigo.md).
+
+## Licença
+
+Código sob a licença MIT (ver [LICENSE](LICENSE)). Os dados em `data/raw/`
+vêm do Yahoo Finance e do Banco Central do Brasil e seguem os termos dessas
+fontes; a licença não se aplica a eles.
+
+## Como citar
+
+Os dados de citação estão em [CITATION.cff](CITATION.cff). O GitHub usa esse
+arquivo para o botão *Cite this repository*, e o Zenodo, para os autores do
+DOI.

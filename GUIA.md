@@ -201,11 +201,12 @@ abaixo).
 - **Giro** (*turnover*) em cada rebalanceamento: `½ Σ |w_novo − w_antigo|`.
   Vai de 0 (não mudou nada) a 1 (trocou tudo).
 - **Custo de transação**: 0,3% × giro, debitado no primeiro dia da janela.
-- **Imposto**: 20% sobre o ganho de capital **realizado** (Lei 11.033/2004).
+- **Imposto**: 20% sobre o ganho de capital **realizado** (Lei 8.668/1993,
+  art. 18).
   Três detalhes:
   - incide só sobre a fração **vendida** (o giro), não sobre a carteira toda;
   - incide só sobre o ganho **de preço**; dividendos de FII são isentos para
-    pessoa física;
+    pessoa física (Lei 11.033/2004);
   - FII não tem a isenção de R$ 20 mil/mês que as ações têm.
 
   Na prática: `tributo = 0,20 × giro × max(ganho_de_preço_da_janela, 0)`,
@@ -389,8 +390,8 @@ Tabelas completas: `results/tables/`.
 - **XFIX11 ≠ IFIX.** O ETF tem taxa de administração e erro de rastreamento
   (até ≈ 1,25 p.p. ao ano). Diferenças menores que isso contra o "índice" não
   devem ser interpretadas.
-- **Os valores-p não têm correção para comparações múltiplas.** Foram feitos
-  cinco testes; trate p = 0,04 com cautela.
+- **Os valores-p não têm correção para comparações múltiplas.** O `04` faz
+  cinco testes e o `12`, mais nove; trate p = 0,04 com cautela.
 - **Rode `03` antes de todos os outros.** Os scripts seguintes leem arquivos em
   `data/processed/`, que não vão para o Git.
 - **A mínima variância pode variar na terceira casa decimal** de uma máquina
@@ -419,4 +420,5 @@ Tabelas completas: `results/tables/`.
 - DEMIGUEL, V.; GARLAPPI, L.; UPPAL, R. Optimal versus naive diversification:
   how inefficient is the 1/N portfolio strategy? *The Review of Financial
   Studies*, v. 22, n. 5, p. 1915–1953, 2009.
+- BRASIL. Lei nº 8.668, de 25 de junho de 1993.
 - BRASIL. Lei nº 11.033, de 21 de dezembro de 2004.
