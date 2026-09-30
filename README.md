@@ -1,66 +1,75 @@
 # GPMF para FIIs
 
 Formação de carteiras de Fundos de Investimento Imobiliário (FIIs) por filtragem
-em grafos. A partir da correlação dos retornos, constrói-se o Grafo Planar
-Maximamente Filtrado (GPMF) e selecionam-se carteiras Central, Periférica e
-Híbrida por centralidade, avaliadas contra o IFIX. Pergunta central: a
-recomendação de Pozzi et al. (2013) de "investir na periferia" vale para FIIs?
+em grafos. A partir da correlação dos retornos, constroem-se o Grafo Planar
+Maximamente Filtrado (GPMF) e a Árvore Geradora Mínima (AGM), e selecionam-se
+carteiras Central, Periférica e Híbrida por centralidade, avaliadas fora da
+amostra, com custos e imposto, contra o IFIX e contra benchmarks de Markowitz.
+Pergunta central: a recomendação de Pozzi et al. (2013) de "investir na
+periferia" vale para FIIs?
+
+**O guia completo, com o funcionamento de cada etapa, o mapa do código e os
+resultados, está em [GUIA.md](GUIA.md).**
 
 ## Pipeline
 
-retornos dos FIIs → correlação → distância `d = √(2(1−ρ))` → **GPMF** (planar,
-≤ 3N−6 arestas) → carteiras por centralidade → avaliação risco/retorno, custos e
-tributos, validação rolante fora da amostra, e comparação com a MST/AGM.
+retornos dos FIIs → correlação → distância `d = √(2(1−ρ))` → **GPMF** (3N−6
+arestas) ou **AGM** (N−1 arestas) → centralidade composta → carteiras → janela
+rolante 360/22 fora da amostra → custo de 0,3% e IR de 20% sobre o ganho de
+preço realizado → Sharpe sobre o CDI e testes de significância.
 
-## Ambiente
+## Como rodar
+
+Requer Python 3.12. Os dados já estão em `data/raw/`; tudo roda offline.
 
 ```bash
-/opt/homebrew/bin/python3.12 -m venv .venv
+python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-```
 
-Apenas o download (`scripts/01_download.py`) acessa a internet. Depois disso os
-dados ficam congelados em `data/raw/` e toda a análise roda offline.
+# resultados do relatório
+.venv/bin/python scripts/02_estatica.py
+.venv/bin/python scripts/03_rolling.py
+.venv/bin/python scripts/04_custos.py
+.venv/bin/python scripts/07_comparacao_completa.py
+.venv/bin/python scripts/09_subperiodos.py
+
+# resultados do artigo (depois dos anteriores)
+.venv/bin/python scripts/05_comparacao.py
+.venv/bin/python scripts/11_benchmarks_classicos.py
+.venv/bin/python scripts/12_significancia_benchmarks.py
+.venv/bin/python scripts/13_auditoria.py
+.venv/bin/python scripts/14_figuras_artigo.py
+```
 
 ## Estrutura
 
 ```
-config.py            parâmetros (janela, custos, grafo, janela rolante)
-requirements.txt     dependências fixadas
-src/                 data_load filters gpmf centrality portfolio rolling costs metrics pipeline
-scripts/             pontos de entrada executáveis (01..05 + verifica_dividendos)
-data/raw|processed/  raw = cache congelado; processed = intermediários
-results/figures|tables/
-docs/                relatório e rascunho do artigo
-notebooks/           driver enxuto (Colab)
-```
-
-## Como reproduzir
-
-```bash
-.venv/bin/python scripts/01_download.py          # baixa e congela os dados
-.venv/bin/python scripts/verifica_dividendos.py  # convenção de dividendos
-.venv/bin/python scripts/02_estatica.py          # tabela estática (referência)
-.venv/bin/python scripts/03_rolling.py           # fora da amostra (principal)
-.venv/bin/python scripts/04_custos.py            # custos, IR e significância
-.venv/bin/python scripts/05_comparacao.py        # GPMF vs MST
-```
-
-Para gerar o relatório final em `.docx` (após rodar os scripts acima):
-
-```bash
-.venv/bin/python scripts/06_relatorio.py        # docs/Relatorio_Final_Yoon.docx
+config.py            todos os parâmetros
+src/                 data_load filters gpmf centrality portfolio rolling costs
+                     metrics riskfree pipeline benchmarks
+scripts/             pontos de entrada numerados (ver GUIA.md, seção 4)
+data/raw/            dados congelados (preços, dividendos, benchmark, CDI)
+results/tables/      tabelas geradas
+results/figures/     figuras geradas
+notebooks/           driver para o Colab
+docs/                rascunho do artigo e versões antigas do relatório
 ```
 
 ## Principais resultados
 
-- Universo determinístico de 51 FIIs; janela mar/2022–nov/2025 (920 pregões);
-  GPMF com 147 arestas (= 3·51−6), planar e conexo.
-- Fora da amostra (550 pregões, 25 rebalanceamentos), as carteiras
-  **periféricas superam as centrais em todos os tamanhos** — a favor de Pozzi.
-- O **GPMF supera a AGM/MST** sob metodologia idêntica.
-- Líquido de custos, o benchmark passivo é difícil de bater e nenhuma diferença
-  de Sharpe é significativa na janela disponível.
+Universo de 51 FIIs, mar/2022–nov/2025; 550 pregões fora da amostra e 25
+rebalanceamentos. Todos os Sharpes são negativos porque o CDI (≈ 12% a.a.)
+superou todas as carteiras; menos negativo é melhor.
 
-Relatório final: [docs/Relatorio_Final_Yoon.docx](docs/Relatorio_Final_Yoon.docx).
+- **No GPMF, a periferia supera o centro nos três tamanhos** (10, 15 e 20),
+  bruto e líquido, e nas duas metades do período. A diferença não é
+  estatisticamente significativa (p = 0,34).
+- **Na AGM, o padrão falha em k = 10**: o giro maior da periférica inverte o
+  resultado depois dos custos.
+- **A carteira Central-10 do GPMF perdeu para o IFIX** (p = 0,04 no bootstrap;
+  0,20 no Jobson-Korkie). Nenhuma carteira superou o índice com significância.
+- **A mínima variância teve o maior Sharpe do estudo** (−0,77, contra −0,91 do
+  IFIX e −0,94 da melhor carteira de rede), mas também sem diferença
+  significativa.
+
 Rascunho do artigo: [docs/artigo.md](docs/artigo.md).
