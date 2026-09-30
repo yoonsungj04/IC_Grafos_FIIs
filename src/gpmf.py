@@ -24,9 +24,11 @@ def matriz_correlacao(retornos: pd.DataFrame, metodo: str = config.CORR_METHOD) 
 def matriz_distancia(retornos: pd.DataFrame, metodo: str = config.CORR_METHOD) -> pd.DataFrame:
     """Distância métrica de Mantegna: d = sqrt(2 (1 - rho))."""
     rho = matriz_correlacao(retornos, metodo)
-    d = np.sqrt(2.0 * (1.0 - rho))
-    np.fill_diagonal(d.values, 0.0)
-    return d
+    # array próprio: no pandas 3 (copy-on-write) `.values` é somente leitura
+    # e o fill_diagonal falharia; o clip evita sqrt(negativo) na diagonal
+    d = np.sqrt(np.clip(2.0 * (1.0 - rho.to_numpy()), 0.0, None))
+    np.fill_diagonal(d, 0.0)
+    return pd.DataFrame(d, index=rho.index, columns=rho.columns)
 
 
 def construir_gpmf(distancia: pd.DataFrame) -> nx.Graph:

@@ -1,8 +1,8 @@
 filtro,carteira,sharpe_liq,ret_liq,dd
-GPMF,central,-1.7023,-0.0592,-0.2042
-GPMF,peripheral,-1.2372,0.0418,-0.2042
-GPMF,hybrid,-1.2189,0.0412,-0.2056
-MST,central,-1.342,-0.0017,-0.1793
-MST,peripheral,-1.3969,0.0233,-0.2306
-MST,hybrid,-1.6205,-0.027,-0.1964
+GPMF,central,-1.5476,-0.0311,-0.2037
+GPMF,peripheral,-1.0994,0.0673,-0.2042
+GPMF,hybrid,-1.0748,0.0678,-0.2052
+MST,central,-1.1474,0.0365,-0.1766
+MST,peripheral,-1.2466,0.0494,-0.2298
+MST,hybrid,-1.4861,-0.0032,-0.1944
 benchmark,-,-0.9066,0.1097,-0.1559

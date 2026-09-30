@@ -18,10 +18,16 @@ import config
 from src import costs, gpmf, metrics, pipeline, riskfree, rolling
 
 
-def _backtest_liquido(ret_log, construtor):
-    res = rolling.backtest_rolling(ret_log, construtor=construtor)
-    oos, giros = res["retornos"], res["giros"]
-    liq = {lbl: costs.aplicar_custos_serie(oos[lbl], giros[lbl]) for lbl in oos.columns}
+def _backtest_liquido(ret_log, construtor, ret_preco):
+    # ret_preco é obrigatório: sem ele `aplicar_custos_serie` tributa o ganho
+    # TOTAL da janela (incluindo o dividendo isento), e esta tabela deixa de
+    # bater com a do script 04, que usa o ganho só de preço.
+    res = rolling.backtest_rolling(ret_log, construtor=construtor,
+                                   retornos_preco=ret_preco)
+    oos, giros, preco = res["retornos"], res["giros"], res["retornos_preco"]
+    liq = {lbl: costs.aplicar_custos_serie(oos[lbl], giros[lbl],
+                                           retornos_preco=preco[lbl])
+           for lbl in oos.columns}
     return oos, pd.DataFrame(liq), res["grafos"]
 
 
@@ -34,7 +40,8 @@ def main() -> None:
     linhas = []
     curvas = {}
     for nome, construtor in filtros.items():
-        oos, liq, grafos = _backtest_liquido(ret_log, construtor)
+        oos, liq, grafos = _backtest_liquido(ret_log, construtor,
+                                             dados["retornos_log_preco"])
         print(f"{nome}: arestas médias {grafos['arestas'].mean():.0f} "
               f"(limite/N: {grafos['limite_3n_6'].iloc[0]})")
         for tipo in config.PORTFOLIO_TYPES:
