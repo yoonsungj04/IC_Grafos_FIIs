@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: >-
+  If you use this code, please cite it as below. The results it reproduces
+  are reported in the manuscript listed under references.
+title: "IC_Grafos_FIIs: PMFG and MST portfolio selection for Brazilian real estate investment funds"
+type: software
+authors:
+  - family-names: "Jang"
+    given-names: "Yoon Sung"
+    affiliation: "School of Technology (FT), University of Campinas (UNICAMP)"
+  - family-names: "Carneiro da Silva"
+    given-names: "Augusto"
+    affiliation: "School of Technology (FT), University of Campinas (UNICAMP)"
+abstract: >-
+  Deterministic pipeline that builds Planar Maximally Filtered Graphs (PMFG)
+  and Minimum Spanning Trees (MST) from the return correlations of 51
+  Brazilian real estate investment funds (FIIs), forms Central, Peripheral
+  and Hybrid portfolios by composite centrality, and evaluates them out of
+  sample with transaction costs, the 20% capital-gains tax and the CDI as the
+  risk-free rate, against the IFIX and classical Markowitz benchmarks. The
+  frozen input data are included, and a single run regenerates every table
+  and figure of the manuscript.
+repository-code: "https://github.com/yoonsungj04/IC_Grafos_FIIs"
+license: MIT
+keywords:
+  - portfolio selection
+  - planar maximally filtered graph
+  - minimum spanning tree
+  - correlation networks
+  - real estate investment funds
+  - FII
+  - econophysics
+references:
+  - type: unpublished
+    title: "A Unified Comparison of Graph-Based Portfolio Construction for Brazilian Real Estate Investment Funds under Realistic Trading Conditions"
+    authors:
+      - family-names: "Carneiro da Silva"
+        given-names: "Augusto"
+      - family-names: "Jang"
+        given-names: "Yoon Sung"
+      - family-names: "Bertini Junior"
+        given-names: "João Roberto"
+    year: 2026
+    notes: "Manuscript in preparation."
